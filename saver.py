@@ -10,7 +10,7 @@ csmin = 4
 csmax = 6
 prange = np.arange(pmin, pmax, (pmax - pmin) / n_samples_p )
 csrange = np.arange(csmin, csmax, (csmax - csmin) / n_samples_sigma )
-store = np.arange(n_samples * n_samples * 4, dtype=np.float32).reshape(n_samples * n_samples, 4)
+store = np.arange(n_samples_p * n_samples_sigma * 4, dtype=np.float32).reshape(n_samples_p * n_samples_sigma, 4)
 counti = 0
 
 for i in prange:
@@ -24,11 +24,11 @@ for i in prange:
         ave = np.mean(data)
         ave2 = np.mean(data2)
         print(i, j, ave, ave2)
-        store[n_samples * counti + countj][0] = i
-        store[n_samples * counti + countj][1] = j
-        store[n_samples * counti + countj][2] = ave
-        store[n_samples * counti + countj][3] = ave2
+        store[n_samples_sigma * counti + countj][0] = i
+        store[n_samples_sigma * counti + countj][1] = j
+        store[n_samples_sigma * counti + countj][2] = ave
+        store[n_samples_sigma * counti + countj][3] = ave2
         countj += 1
     counti += 1
 
-np.save("dat.txt", store)
+np.save("dat24.txt", store)

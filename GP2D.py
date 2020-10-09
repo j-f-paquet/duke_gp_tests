@@ -249,8 +249,8 @@ emul_d = {}
 
 for obs_name, info_d in obs_d.items():
     emul_d[obs_name] = {
-        'mean': predictM(y_mesh[0], gp),
-        'uncert': predictC(y_mesh[0], gp)
+        'mean': predictM(x_mesh, gp),
+        'uncert': predictC(x_mesh, gp)
     }
 
 
