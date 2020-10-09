@@ -1,21 +1,22 @@
 import numpy as np
 import subprocess
 
-n = 100
-m = 1000
+n_samples_p = 6   # Discretization of each Trento parameter
+n_samples_sigma = 4   # Discretization of each Trento parameter
+n_trento = 1000   # Number of times to run Trento
 pmin = 0
-pmax = 2
+pmax = 0.5
 csmin = 4
-csmax = 10
-prange = np.arange(pmin, pmax, (pmax - pmin) / n)
-csrange = np.arange(csmin, csmax, (csmax - csmin) / n)
-store = np.arange(n * n * 4, dtype=np.float32).reshape(n * n, 4)
+csmax = 6
+prange = np.arange(pmin, pmax, (pmax - pmin) / n_samples_p )
+csrange = np.arange(csmin, csmax, (csmax - csmin) / n_samples_sigma )
+store = np.arange(n_samples * n_samples * 4, dtype=np.float32).reshape(n_samples * n_samples, 4)
 counti = 0
 
 for i in prange:
     countj = 0
     for j in csrange:
-        string = '../build/src/trento Pb Pb ' + str(m) + ' -x ' + str(j) + ' -p ' + str(i)
+        string = '../build/src/trento Pb Pb ' + str(n_trento) + ' -x ' + str(j) + ' -p ' + str(i)
         with subprocess.Popen(string.split(), stdout=subprocess.PIPE) as proc:
             data = np.array([l.split() for l in proc.stdout], dtype=float)[:, 4]
         with subprocess.Popen(string.split(), stdout=subprocess.PIPE) as proc:
@@ -23,10 +24,10 @@ for i in prange:
         ave = np.mean(data)
         ave2 = np.mean(data2)
         print(i, j, ave, ave2)
-        store[n * counti + countj][0] = i
-        store[n * counti + countj][1] = j
-        store[n * counti + countj][2] = ave
-        store[n * counti + countj][3] = ave2
+        store[n_samples * counti + countj][0] = i
+        store[n_samples * counti + countj][1] = j
+        store[n_samples * counti + countj][2] = ave
+        store[n_samples * counti + countj][3] = ave2
         countj += 1
     counti += 1
 
