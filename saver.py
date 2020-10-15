@@ -1,13 +1,13 @@
 import numpy as np
 import subprocess
 
-n_samples_p = 6   # Discretization of each Trento parameter
-n_samples_sigma = 4   # Discretization of each Trento parameter
-n_trento = 1000   # Number of times to run Trento
+n_samples_p = 100   # Discretization of each Trento parameter
+n_samples_sigma = 100   # Discretization of each Trento parameter
+n_trento = 2000   # Number of times to run Trento
 pmin = 0
-pmax = 0.5
+pmax = 2
 csmin = 4
-csmax = 6
+csmax = 8
 prange = np.arange(pmin, pmax, (pmax - pmin) / n_samples_p )
 csrange = np.arange(csmin, csmax, (csmax - csmin) / n_samples_sigma )
 store = np.arange(n_samples_p * n_samples_sigma * 4, dtype=np.float32).reshape(n_samples_p * n_samples_sigma, 4)
@@ -31,4 +31,4 @@ for i in prange:
         countj += 1
     counti += 1
 
-np.save("dat24.txt", store)
+np.save("dat.txt", store)

@@ -21,17 +21,16 @@ warnings.filterwarnings('ignore')
 #################################
 
 # Replace these two functions with trento calls ################ <=============================
-datum = np.load("dat.txt.npy")
-nlen = int(len(datum) ** 0.5)
-print(datum[100, 2])
+nlenp = 6
+nlenx = 4
+datum = np.load("dat24.txt.npy").reshape((nlenp, nlenx, 4))
 
 
 # Return observable given parameter
 def e2(params):
     thicc = params['reduced_thickness']
-    leng = int(nlen/len(thicc))
-    n = int(nlen * thicc[0] * nlen / 2)
-    return datum[n:n + nlen:leng, 2]
+    nn = int(nlenp * thicc[0] * nlenx / 2)
+    return datum[nn, :, 2]
 
 
 def true2(params):
@@ -48,9 +47,8 @@ def true2(params):
 # Return observable given parameter
 def e3(params):
     thicc = params['reduced_thickness']
-    leng = int(nlen/len(thicc))
-    n = int(nlen * thicc[0] * nlen / 2)
-    return datum[n:n + nlen:leng, 3]
+    nn = int(nlenp * thicc[0] * nlenx / 2)
+    return datum[nn, :, 3]
 
 
 def true3(params):
@@ -71,12 +69,12 @@ def true3(params):
 parameter_d = {
     'reduced_thickness': {
         "label": "Reduced thickness",
-        "range": [0, 2],  # <====================================================
-        "truth": 1.618  # <====================================================
+        "range": [0, 0.5],  # <====================================================
+        "truth": 0.314  # <====================================================
     },
     'cross_section': {
         "label": r"Cross-section $\sigma_{NN}$",
-        "range": [4., 10.],  # <====================================================
+        "range": [4., 6.],  # <====================================================
         "truth": 5.28  # <====================================================
     }
 }
@@ -152,8 +150,8 @@ for obs_name, info_d in obs_d.items():
     plt.ylabel(y_label)
 
     # Compute the posterior for a range of values of the parameter "x"
-    x_range = np.arange(xmin, xmax, (xmax - xmin) / 100.)
-    y_range = np.arange(ymin, ymax, (ymax - ymin) / 100.)
+    x_range = np.arange(xmin, xmax, (xmax - xmin) / nlenp)
+    y_range = np.arange(ymin, ymax, (ymax - ymin) / nlenx)
 
     x_mesh, y_mesh = np.meshgrid(x_range, y_range, sparse=False, indexing='ij')
     print(np.shape(x_mesh), np.shape(y_mesh))
@@ -179,7 +177,7 @@ calc_d = {}
 
 for obs_name, info_d in obs_d.items():
     # Number of points used for the "emulator"
-    number_design_emulator = 20  # <=========================================================
+    number_design_emulator = 3  # <=========================================================
 
     # Function that returns the value of an observable
     obs_fct = info_d['fct']
@@ -194,8 +192,8 @@ for obs_name, info_d in obs_d.items():
     ymin, ymax = parameter_d[y_param_name]['range']
 
     # For simplicity, we sample the emulator uniformly
-    x_list = np.linspace(xmin, xmax, num=number_design_emulator)
-    y_list = np.linspace(ymin, ymax, num=number_design_emulator)
+    x_list = np.linspace(xmin, xmax-(xmax-xmin)/nlenp, num=number_design_emulator)
+    y_list = np.linspace(ymin, ymax-(ymax-ymin)/nlenx, num=number_design_emulator)
 
     x_mesh2, y_mesh2 = np.meshgrid(x_list, y_list, sparse=False, indexing='ij')
 
@@ -227,9 +225,12 @@ kernel = (
 gp = GPR(kernel=kernel,
          n_restarts_optimizer=5,
          copy_X_train=False)
-meshmesh = np.append(x_mesh, y_mesh).reshape((len(x_mesh), len(x_mesh[:]), 2))
-print(np.shape(meshmesh), np.shape(z_list))
-gp.fit(np.atleast_2d(y_mesh), z_list)
+meshmesh = np.zeros((nlenp * nlenx, 2))
+for ii in range(nlenp * nlenx):
+    meshmesh[ii][0] = x_mesh[int((ii*nlenp) % (nlenp*nlenx))][0]
+    meshmesh[ii][1] = y_mesh[0][int(ii % nlenx)]
+print(meshmesh)
+gp.fit(np.atleast_2d(meshmesh), z_list)
 print("C^2 = ", gp.kernel_.get_params()['k1'])
 print(gp.kernel_.get_params()['k2'])
 
