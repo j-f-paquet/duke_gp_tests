@@ -361,7 +361,7 @@ plt.ylabel(r'Posterior')
 # Compute the posterior for a range of values of the parameter "x"
 x_range3 = np.arange(xmin, xmax, (xmax - xmin) / nlenp)
 
-posterior_list = [scipy.integrate.quad(lambda y_val: posterior({x_param_name: x_val, y_param_name: y_val}, data_d),
+posterior_list = [scipy.integrate.quad(lambda y_val: posterior({x_param_name: x_val, y_param_name: y_val}, data_d)[0],
                                        ymin, ymax)[0] for x_val in x_range3]
 
 plt.plot(x_range3, posterior_list, "-", color='black', lw=4)
@@ -383,7 +383,7 @@ plt.ylabel(r'Posterior')
 y_range3 = np.arange(ymin, ymax, (ymax - ymin) / nlenx)
 
 posterior_list = [
-    scipy.integrate.quad(lambda x_val: posterior({x_param_name: x_val, y_param_name: y_val}, data_d), xmin, xmax,
+    scipy.integrate.quad(lambda x_val: posterior({x_param_name: x_val, y_param_name: y_val}, data_d)[0], xmin, xmax,
                          limit=100, epsrel=1e-4)[0] for y_val in y_range3]
 
 plt.plot(y_range3, posterior_list, "-", color='black', lw=4)
