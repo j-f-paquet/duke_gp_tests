@@ -22,22 +22,23 @@ warnings.filterwarnings('ignore')
 #################################
 
 # Replace these two functions with trento calls ################ <=============================
-nlenp = 6
-nlenx = 4
-datum = np.load("dat24.txt.npy").reshape((nlenp, nlenx, 4))
+nlenp = 100
+nlenx = 100
+datum = np.load("dat.txt.npy").reshape((nlenp, nlenx, 4))
 
 
 # Return observable given parameter
 def e2(params):
     thicc = params['reduced_thickness']
-    nn = int(nlenp * (thicc[0] - xmin) * nlenx / 2)
+    div = (xmax - xmin) * nlenx
+    nn = int(nlenp * (thicc[0] - xmin) * nlenx / div)
     return datum[nn, :, 2]
 
 
 def true2(params):
     thicc = params['reduced_thickness']
     xsec = params['cross_section']
-    string = '../build/src/trento Pb Pb 400 -p ' + str(thicc) + ' -x ' + str(xsec)
+    string = '../build/src/trento Pb Pb 4000 -p ' + str(thicc) + ' -x ' + str(xsec)
     with subprocess.Popen(string.split(), stdout=subprocess.PIPE) as proc:
         data = np.array([l.split() for l in proc.stdout], dtype=float)[:, 4]
     ave = np.mean(data)
@@ -48,14 +49,15 @@ def true2(params):
 # Return observable given parameter
 def e3(params):
     thicc = params['reduced_thickness']
-    nn = int(nlenp * (thicc[0] - xmin) * nlenx / 2)
+    div = (xmax - xmin) * nlenx
+    nn = int(nlenp * (thicc[0] - xmin) * nlenx / div)
     return datum[nn, :, 3]
 
 
 def true3(params):
     thicc = params['reduced_thickness']
     xsec = params['cross_section']
-    string = '../build/src/trento Pb Pb 400 -x ' + str(xsec) + ' -p ' + str(thicc)
+    string = '../build/src/trento Pb Pb 4000 -x ' + str(xsec) + ' -p ' + str(thicc)
     with subprocess.Popen(string.split(), stdout=subprocess.PIPE) as proc:
         data = np.array([l.split() for l in proc.stdout], dtype=float)[:, 5]
     ave = np.mean(data)
@@ -70,12 +72,12 @@ def true3(params):
 parameter_d = {
     'reduced_thickness': {
         "label": "Reduced thickness",
-        "range": [0, 0.5],  # <====================================================
+        "range": [0, 2],  # <====================================================
         "truth": 0.314  # <====================================================
     },
     'cross_section': {
         "label": r"Cross-section $\sigma_{NN}$",
-        "range": [4., 6.],  # <====================================================
+        "range": [4., 8.],  # <====================================================
         "truth": 5.28  # <====================================================
     }
 }
@@ -282,10 +284,11 @@ def likelihood(params, data):
         tmp_model_uncert = emul_d[obs_name2]['uncert']
         tmp_data_mean = data_mean2
         tmp_data_uncert = data_uncert2
+        div = (xmax - xmin) * nlenx
         if not isinstance(x_value, (int, np.float64, float)):
-            nn = int((x_value[0] - xmin) * nlenp * nlenx / 2)
+            nn = int((x_value[0] - xmin) * nlenp * nlenx / div)
         else:
-            nn = int((x_value - xmin) * nlenp * nlenx / 2)
+            nn = int((x_value - xmin) * nlenp * nlenx / div)
 
         tmp_model_mean = np.array(tmp_model_mean).reshape((nlenp, nlenx))[nn]
         tmp_model_uncert = np.array(tmp_model_uncert).reshape((nlenp, nlenx))[nn]
@@ -361,8 +364,9 @@ plt.ylabel(r'Posterior')
 # Compute the posterior for a range of values of the parameter "x"
 x_range3 = np.arange(xmin, xmax, (xmax - xmin) / nlenp)
 
+divy = (ymax - ymin) * nlenp
 posterior_list = [scipy.integrate.quad(lambda y_val: posterior({x_param_name: x_val, y_param_name: y_val},
-                                                               data_d)[int((y_val-ymin) * nlenx * nlenp / 12)],
+                                                               data_d)[int((y_val-ymin) * nlenx * nlenp / divy)],
                                        ymin, ymax)[0] for x_val in x_range3]
 
 plt.plot(x_range3, posterior_list, "-", color='black', lw=4)
@@ -385,7 +389,7 @@ y_range3 = np.arange(ymin, ymax, (ymax - ymin) / nlenx)
 
 posterior_list = [
     scipy.integrate.quad(lambda x_val: posterior({x_param_name: x_val, y_param_name: y_val},
-                                                 data_d)[int((y_val-ymin) * nlenx * nlenp / 12)], xmin, xmax,
+                                                 data_d)[int((y_val-ymin) * nlenx * nlenp / divy)], xmin, xmax,
                          limit=100, epsrel=1e-4)[0] for y_val in y_range3]
 
 plt.plot(y_range3, posterior_list, "-", color='black', lw=4)
