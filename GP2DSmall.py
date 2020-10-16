@@ -36,12 +36,12 @@ def e2(params):
 
 def true2(params):
     thicc = params['reduced_thickness']
-    xsec = params['cross_section']
-    string = '../build/src/trento Pb Pb 400 -p ' + str(thicc) + ' -x ' + str(xsec)
+    wide = params['nucleon_width']
+    string = '../build/src/trento Pb Pb 4000 -p ' + str(thicc) + ' -w ' + str(wide)
     with subprocess.Popen(string.split(), stdout=subprocess.PIPE) as proc:
         data = np.array([l.split() for l in proc.stdout], dtype=float)[:, 4]
     ave = np.mean(data)
-    print(thicc, xsec, ave)
+    print(thicc, wide, ave)
     return ave
 
 
@@ -54,12 +54,12 @@ def e3(params):
 
 def true3(params):
     thicc = params['reduced_thickness']
-    xsec = params['cross_section']
-    string = '../build/src/trento Pb Pb 400 -x ' + str(xsec) + ' -p ' + str(thicc)
+    wide = params['nucleon_width']
+    string = '../build/src/trento Pb Pb 4000 -w ' + str(wide) + ' -p ' + str(thicc)
     with subprocess.Popen(string.split(), stdout=subprocess.PIPE) as proc:
         data = np.array([l.split() for l in proc.stdout], dtype=float)[:, 5]
     ave = np.mean(data)
-    print(thicc, xsec, ave)
+    print(thicc, wide, ave)
     return ave
 
 
@@ -73,10 +73,10 @@ parameter_d = {
         "range": [0, 0.5],  # <====================================================
         "truth": 0.314  # <====================================================
     },
-    'cross_section': {
-        "label": r"Cross-section $\sigma_{NN}$",
-        "range": [4., 6.],  # <====================================================
-        "truth": 5.28  # <====================================================
+    'nucleon_width': {
+        "label": r"Nucleon Width (fermi)",
+        "range": [0.5, 1.2],  # <====================================================
+        "truth": 0.69  # <====================================================
     }
 }
 
@@ -236,13 +236,25 @@ print(gp.kernel_.get_params()['k2'])
 
 def predictM(x, gpx):
     mean2 = gpx.predict(return_cov=False, X=np.atleast_2d(x).T)
-    return mean2
+    return np.transpose(mean2)[0]
 
 
 def predictC(x, gpx):
     mean2, cov = gpx.predict(return_cov=True, X=np.atleast_2d(x).T)
     return np.sqrt(np.diag(cov))
 
+
+plt.figure()
+plt.plot(datum[0, :, 1], datum[0, :, 2], 'b.')
+w_sample = np.linspace(0.5, 1.2, 10)
+new_list = [[w, 0] for w in w_sample]
+mean_new = predictM(np.transpose(new_list), gp)
+var_new = predictC(np.transpose(new_list), gp)
+print(mean_new)
+print(var_new)
+plt.fill_between(w_sample, mean_new - var_new, mean_new + var_new, color='b', alpha=.3, label=r'GP $\pm 1\sigma$')
+plt.fill_between(w_sample, mean_new - 2*var_new, mean_new + 2*var_new, color='gray', alpha=.3, label=r'GP $\pm 2\sigma$')
+plt.show()
 
 emul_d = {}
 

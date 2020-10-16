@@ -25,7 +25,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # some plot settings, not important
-fontsize  = 12
+fontsize = 12
 plt.rcdefaults()
 plt.rcParams.update({
     'font.size': fontsize,
@@ -41,6 +41,7 @@ plt.rcParams.update({
     'image.cmap': 'Blues',
     'image.interpolation': 'none',
 })
+
 
 def observable_1(x):
     string = '../build/src/trento Pb Pb 4000 --b-min 1 --b-max 1 -p ' + str(x)

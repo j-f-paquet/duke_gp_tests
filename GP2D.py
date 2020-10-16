@@ -180,7 +180,7 @@ calc_d = {}
 
 for obs_name, info_d in obs_d.items():
     # Number of points used for the "emulator"
-    number_design_emulator = 3  # <=========================================================
+    number_design_emulator = 20  # <=========================================================
 
     # Function that returns the value of an observable
     obs_fct = info_d['fct']
