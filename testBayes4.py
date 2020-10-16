@@ -118,7 +118,7 @@ for obs_name, info_d in obs_d.items():
     }
 
 
-def prior(params):
+def prior():
     return 1
 
 
@@ -150,7 +150,7 @@ def likelihood(params, data):
 
 
 def posterior(params, data):
-    return prior(params) * likelihood(params, data)
+    return prior() * likelihood(params, data)
 
 
 param_name_list = list(param_d.keys())

@@ -282,10 +282,10 @@ def likelihood(params, data):
         tmp_model_uncert = emul_d[obs_name2]['uncert']
         tmp_data_mean = data_mean2
         tmp_data_uncert = data_uncert2
-        if isinstance(x_value, np.float64):
-            nn = int(x_value * nlenp * nlenx / 2)
-        else:
+        if not isinstance(x_value, (int, np.float64, float)):
             nn = int(x_value[0] * nlenp * nlenx / 2)
+        else:
+            nn = int(x_value * nlenp * nlenx / 2)
 
         tmp_model_mean = np.array(tmp_model_mean).reshape((nlenp, nlenx))[nn]
         tmp_model_uncert = np.array(tmp_model_uncert).reshape((nlenp, nlenx))[nn]
@@ -325,13 +325,10 @@ plt.xlabel(x_label)
 plt.ylabel(y_label)
 
 # Compute the posterior for a range of values of the parameter "x"
-x_range = np.arange(xmin, xmax, (xmax - xmin) / nlenp)
-y_range = np.arange(ymin, ymax, (ymax - ymin) / nlenx)
+x_range2 = np.arange(xmin, xmax, (xmax - xmin) / nlenp)
+y_range2 = np.arange(ymin, ymax, (ymax - ymin) / nlenx)
 
-x_mesh3, y_mesh3 = np.meshgrid(x_range, y_range, sparse=False, indexing='ij')
-
-test = posterior({x_param_name: x_mesh3[0], y_param_name: y_mesh3[0]}, data_d)
-print(np.shape(test))
+x_mesh3, y_mesh3 = np.meshgrid(x_range2, y_range2, sparse=False, indexing='ij')
 
 posterior_array = [posterior({x_param_name: x_val, y_param_name: y_val}, data_d)
                    for (x_val, y_val) in zip(x_mesh3, y_mesh3)]
@@ -362,12 +359,12 @@ plt.ylabel(r'Posterior')
 # The marginal posterior for a parameter is obtained by integrating over a subset of other model parameters
 
 # Compute the posterior for a range of values of the parameter "x"
-x_range = np.arange(xmin, xmax, (xmax - xmin) / nlenp)
+x_range3 = np.arange(xmin, xmax, (xmax - xmin) / nlenp)
 
 posterior_list = [scipy.integrate.quad(lambda y_val: posterior({x_param_name: x_val, y_param_name: y_val}, data_d),
                                        ymin, ymax)[0] for x_val in x_range]
 
-plt.plot(x_range, posterior_list, "-", color='black', lw=4)
+plt.plot(x_range3, posterior_list, "-", color='black', lw=4)
 
 plt.axvline(x=x_truth, color='red')
 
@@ -383,13 +380,13 @@ plt.xlabel(y_label)
 plt.ylabel(r'Posterior')
 
 # Compute the posterior for a range of values of the parameter "x"
-y_range = np.arange(ymin, ymax, (ymax - ymin) / 100.)
+y_range3 = np.arange(ymin, ymax, (ymax - ymin) / nlenx)
 
 posterior_list = [
     scipy.integrate.quad(lambda x_val: posterior({x_param_name: x_val, y_param_name: y_val}, data_d), xmin, xmax,
-                         limit=100, epsrel=1e-4)[0] for y_val in y_range]
+                         limit=100, epsrel=1e-4)[0] for y_val in y_range3]
 
-plt.plot(y_range, posterior_list, "-", color='black', lw=4)
+plt.plot(y_range3, posterior_list, "-", color='black', lw=4)
 
 plt.axvline(x=y_truth, color='red')
 
