@@ -30,7 +30,7 @@ datum = np.load("dat24.txt.npy").reshape((nlenp, nlenx, 4))
 # Return observable given parameter
 def e2(params):
     thicc = params['reduced_thickness']
-    nn = int(nlenp * thicc[0] * nlenx / 2)
+    nn = int(nlenp * (thicc[0] - xmin) * nlenx / 2)
     return datum[nn, :, 2]
 
 
@@ -48,7 +48,7 @@ def true2(params):
 # Return observable given parameter
 def e3(params):
     thicc = params['reduced_thickness']
-    nn = int(nlenp * thicc[0] * nlenx / 2)
+    nn = int(nlenp * (thicc[0] - xmin) * nlenx / 2)
     return datum[nn, :, 3]
 
 
@@ -283,9 +283,9 @@ def likelihood(params, data):
         tmp_data_mean = data_mean2
         tmp_data_uncert = data_uncert2
         if not isinstance(x_value, (int, np.float64, float)):
-            nn = int(x_value[0] * nlenp * nlenx / 2)
+            nn = int((x_value[0] - xmin) * nlenp * nlenx / 2)
         else:
-            nn = int(x_value * nlenp * nlenx / 2)
+            nn = int((x_value - xmin) * nlenp * nlenx / 2)
 
         tmp_model_mean = np.array(tmp_model_mean).reshape((nlenp, nlenx))[nn]
         tmp_model_uncert = np.array(tmp_model_uncert).reshape((nlenp, nlenx))[nn]
@@ -329,7 +329,7 @@ x_range2 = np.arange(xmin, xmax, (xmax - xmin) / nlenp)
 y_range2 = np.arange(ymin, ymax, (ymax - ymin) / nlenx)
 
 x_mesh3, y_mesh3 = np.meshgrid(x_range2, y_range2, sparse=False, indexing='ij')
-
+print(posterior({x_param_name: x_mesh3[0], y_param_name: y_mesh3[0]}, data_d))
 posterior_array = [posterior({x_param_name: x_val, y_param_name: y_val}, data_d)
                    for (x_val, y_val) in zip(x_mesh3, y_mesh3)]
 print(np.shape(posterior_array))
@@ -361,7 +361,8 @@ plt.ylabel(r'Posterior')
 # Compute the posterior for a range of values of the parameter "x"
 x_range3 = np.arange(xmin, xmax, (xmax - xmin) / nlenp)
 
-posterior_list = [scipy.integrate.quad(lambda y_val: posterior({x_param_name: x_val, y_param_name: y_val}, data_d)[0],
+posterior_list = [scipy.integrate.quad(lambda y_val: posterior({x_param_name: x_val, y_param_name: y_val},
+                                                               data_d)[int((y_val-ymin) * nlenx * nlenp / 12)],
                                        ymin, ymax)[0] for x_val in x_range3]
 
 plt.plot(x_range3, posterior_list, "-", color='black', lw=4)
@@ -383,7 +384,8 @@ plt.ylabel(r'Posterior')
 y_range3 = np.arange(ymin, ymax, (ymax - ymin) / nlenx)
 
 posterior_list = [
-    scipy.integrate.quad(lambda x_val: posterior({x_param_name: x_val, y_param_name: y_val}, data_d)[0], xmin, xmax,
+    scipy.integrate.quad(lambda x_val: posterior({x_param_name: x_val, y_param_name: y_val},
+                                                 data_d)[int((y_val-ymin) * nlenx * nlenp / 12)], xmin, xmax,
                          limit=100, epsrel=1e-4)[0] for y_val in y_range3]
 
 plt.plot(y_range3, posterior_list, "-", color='black', lw=4)
