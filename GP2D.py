@@ -362,7 +362,7 @@ plt.ylabel(r'Posterior')
 x_range3 = np.arange(xmin, xmax, (xmax - xmin) / nlenp)
 
 posterior_list = [scipy.integrate.quad(lambda y_val: posterior({x_param_name: x_val, y_param_name: y_val}, data_d),
-                                       ymin, ymax)[0] for x_val in x_range]
+                                       ymin, ymax)[0] for x_val in x_range3]
 
 plt.plot(x_range3, posterior_list, "-", color='black', lw=4)
 
