@@ -2,6 +2,7 @@
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import math
 import scipy.interpolate
 import scipy.integrate
 import subprocess
@@ -36,7 +37,7 @@ def e2(params):
 def true2(params):
     thicc = params['reduced_thickness']
     xsec = params['cross_section']
-    string = '../build/src/trento Pb Pb 4000 -p ' + str(thicc) + ' -x ' + str(xsec)
+    string = '../build/src/trento Pb Pb 400 -p ' + str(thicc) + ' -x ' + str(xsec)
     with subprocess.Popen(string.split(), stdout=subprocess.PIPE) as proc:
         data = np.array([l.split() for l in proc.stdout], dtype=float)[:, 4]
     ave = np.mean(data)
@@ -54,7 +55,7 @@ def e3(params):
 def true3(params):
     thicc = params['reduced_thickness']
     xsec = params['cross_section']
-    string = '../build/src/trento Pb Pb 4000 -x ' + str(xsec) + ' -p ' + str(thicc)
+    string = '../build/src/trento Pb Pb 400 -x ' + str(xsec) + ' -p ' + str(thicc)
     with subprocess.Popen(string.split(), stdout=subprocess.PIPE) as proc:
         data = np.array([l.split() for l in proc.stdout], dtype=float)[:, 5]
     ave = np.mean(data)
@@ -212,32 +213,29 @@ for obs_name, info_d in obs_d.items():
 #########################################
 
 kernel = (
-        1. * kernels.RBF(
-    length_scale=.2,
-    length_scale_bounds=(.05, .5)
-)
+        1. * kernels.RBF(length_scale=.2,
+                         length_scale_bounds=(.05, .5))
         #    + kernels.ConstantKernel()
-        + kernels.WhiteKernel(
-    noise_level=1.,
-    noise_level_bounds=(1e-5, 1e5))
+        + kernels.WhiteKernel(noise_level=1.,
+                              noise_level_bounds=(1e-5, 1e5))
 )
 
 gp = GPR(kernel=kernel,
          n_restarts_optimizer=5,
          copy_X_train=False)
 meshmesh = np.zeros((nlenp * nlenx, 2))
+z_list_new = np.zeros((nlenp * nlenx, 1))
 for ii in range(nlenp * nlenx):
-    meshmesh[ii][0] = x_mesh[int((ii*nlenp) % (nlenp*nlenx))][0]
+    meshmesh[ii][0] = x_mesh[math.floor(ii / nlenx)][0]
     meshmesh[ii][1] = y_mesh[0][int(ii % nlenx)]
-print(meshmesh)
-gp.fit(np.atleast_2d(meshmesh), z_list)
+    z_list_new[ii] = z_list[math.floor(ii / nlenx)][int(ii % nlenx)]
+gp.fit(np.atleast_2d(meshmesh), z_list_new)
 print("C^2 = ", gp.kernel_.get_params()['k1'])
 print(gp.kernel_.get_params()['k2'])
 
 
 def predictM(x, gpx):
-    mean2, cov = gpx.predict(return_cov=True, X=np.atleast_2d(x).T)
-    print(mean2)
+    mean2 = gpx.predict(return_cov=False, X=np.atleast_2d(x).T)
     return mean2
 
 
@@ -250,8 +248,8 @@ emul_d = {}
 
 for obs_name, info_d in obs_d.items():
     emul_d[obs_name] = {
-        'mean': predictM(x_mesh, gp),
-        'uncert': predictC(x_mesh, gp)
+        'mean': predictM(np.transpose(meshmesh), gp),
+        'uncert': predictC(np.transpose(meshmesh), gp)
     }
 
 
@@ -274,24 +272,25 @@ def likelihood(params, data):
     norm = 1.
     # Sum over observables
     for obs_name2 in obs_d.keys():
-        emul_calc = emul_d[obs_name2]['mean']
-        emul_uncert = emul_d[obs_name2]['uncert']
         data_mean2 = data[obs_name2]['mean']
         data_uncert2 = data[obs_name2]['uncert']
-        emul_calc_vec = np.vectorize(emul_calc)
-        emul_uncert_vec = np.vectorize(emul_uncert)
         param_name_list2 = list(parameter_d.keys())
         x_param_name2 = param_name_list2[0]
         x_value = params[x_param_name2]
-        y_param_name2 = param_name_list2[1]
-        y_value = params[y_param_name2]
 
         tmp_model_mean = emul_d[obs_name2]['mean']
         tmp_model_uncert = emul_d[obs_name2]['uncert']
         tmp_data_mean = data_mean2
         tmp_data_uncert = data_uncert2
+        if isinstance(x_value, np.float64):
+            nn = int(x_value * nlenp * nlenx / 2)
+        else:
+            nn = int(x_value[0] * nlenp * nlenx / 2)
+
+        tmp_model_mean = np.array(tmp_model_mean).reshape((nlenp, nlenx))[nn]
+        tmp_model_uncert = np.array(tmp_model_uncert).reshape((nlenp, nlenx))[nn]
         cov = (np.multiply(tmp_model_uncert, tmp_model_uncert) + np.multiply(tmp_data_uncert, tmp_data_uncert))
-        res += np.power(tmp_model_mean - tmp_data_mean, 2) / cov
+        res += np.divide(np.power(tmp_model_mean - tmp_data_mean, 2), cov)
         norm *= 1 / np.sqrt(cov)
     res *= -0.5
     return norm * np.exp(res)
@@ -326,10 +325,13 @@ plt.xlabel(x_label)
 plt.ylabel(y_label)
 
 # Compute the posterior for a range of values of the parameter "x"
-x_range = np.arange(xmin, xmax, (xmax - xmin) / 100.)
-y_range = np.arange(ymin, ymax, (ymax - ymin) / 100.)
+x_range = np.arange(xmin, xmax, (xmax - xmin) / nlenp)
+y_range = np.arange(ymin, ymax, (ymax - ymin) / nlenx)
 
 x_mesh3, y_mesh3 = np.meshgrid(x_range, y_range, sparse=False, indexing='ij')
+
+test = posterior({x_param_name: x_mesh3[0], y_param_name: y_mesh3[0]}, data_d)
+print(np.shape(test))
 
 posterior_array = [posterior({x_param_name: x_val, y_param_name: y_val}, data_d)
                    for (x_val, y_val) in zip(x_mesh3, y_mesh3)]
@@ -360,11 +362,10 @@ plt.ylabel(r'Posterior')
 # The marginal posterior for a parameter is obtained by integrating over a subset of other model parameters
 
 # Compute the posterior for a range of values of the parameter "x"
-x_range = np.arange(xmin, xmax, (xmax - xmin) / 100.)
+x_range = np.arange(xmin, xmax, (xmax - xmin) / nlenp)
 
-posterior_list = [
-    scipy.integrate.quad(lambda y_val: posterior({x_param_name: x_val, y_param_name: y_val}, data_d), ymin, ymax)[0] for
-    x_val in x_range]
+posterior_list = [scipy.integrate.quad(lambda y_val: posterior({x_param_name: x_val, y_param_name: y_val}, data_d),
+                                       ymin, ymax)[0] for x_val in x_range]
 
 plt.plot(x_range, posterior_list, "-", color='black', lw=4)
 
