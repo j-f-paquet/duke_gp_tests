@@ -126,15 +126,17 @@ gp.fit(np.atleast_2d(x_design).T, y_design)
 print("C^2 = ", gp.kernel_.get_params()['k1'])
 print(gp.kernel_.get_params()['k2'])
 
+
 def predict(x, gp):
     mean, cov = gp.predict(return_cov=True, X=np.atleast_2d(x).T)
     return mean, np.sqrt(np.diag(cov))
+
 
 x = np.linspace(xmin, xmax, 201)
 y, ystd = predict(x, gp)
 fig, ax = plt.subplots(1,1,figsize=(5,4))
 ax.plot(x_design, y_design, 'ro', label='Design')
-#ax.plot(x, [observable_1(d) for d in x],'k-', label=r'$F(x)$')
+# ax.plot(x, [observable_1(d) for d in x],'k-', label=r'$F(x)$')
 ax.plot(x_design, y_design, 'k-', label=r'$F(x)$')
 ax.plot(x, y,'b--', label=r'GP mean')
 ax.fill_between(x, y-ystd, y+ystd, color='b', alpha=.3, label=r'GP $\pm 1\sigma$')

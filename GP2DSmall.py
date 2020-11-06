@@ -193,8 +193,8 @@ for obs_name, info_d in obs_d.items():
     ymin, ymax = parameter_d[y_param_name]['range']
 
     # For simplicity, we sample the emulator uniformly
-    x_list = np.linspace(xmin, xmax-(xmax-xmin)/nlenp, num=number_design_emulator)
-    y_list = np.linspace(ymin, ymax-(ymax-ymin)/nlenx, num=number_design_emulator)
+    x_list = np.linspace(xmin, xmax - (xmax - xmin) / nlenp, num=number_design_emulator)
+    y_list = np.linspace(ymin, ymax - (ymax - ymin) / nlenx, num=number_design_emulator)
 
     x_mesh2, y_mesh2 = np.meshgrid(x_list, y_list, sparse=False, indexing='ij')
 
@@ -225,11 +225,11 @@ gp = GPR(kernel=kernel,
          copy_X_train=False)
 meshmesh = np.zeros((nlenp * nlenx, 2))
 z_list_new = np.zeros((nlenp * nlenx, 1))
-for ii in range(nlenp * nlenx):
+for ii in range(nlenp):
     meshmesh[ii][0] = x_mesh[math.floor(ii / nlenx)][0]
     meshmesh[ii][1] = y_mesh[0][int(ii % nlenx)]
     z_list_new[ii] = z_list[math.floor(ii / nlenx)][int(ii % nlenx)]
-gp.fit(np.atleast_2d(meshmesh), z_list_new)
+gp.fit(np.atleast_2d(x_mesh), z_list)
 print("C^2 = ", gp.kernel_.get_params()['k1'])
 print(gp.kernel_.get_params()['k2'])
 
@@ -247,21 +247,22 @@ def predictC(x, gpx):
 plt.figure()
 plt.plot(datum[0, :, 1], datum[0, :, 2], 'b.')
 w_sample = np.linspace(0.5, 1.2, 10)
-new_list = [[w, 0] for w in w_sample]
+new_list = [[w, 0, 0, 0] for w in w_sample]
 mean_new = predictM(np.transpose(new_list), gp)
 var_new = predictC(np.transpose(new_list), gp)
 print(mean_new)
 print(var_new)
-plt.fill_between(w_sample, mean_new - var_new, mean_new + var_new, color='b', alpha=.3, label=r'GP $\pm 1\sigma$')
-plt.fill_between(w_sample, mean_new - 2*var_new, mean_new + 2*var_new, color='gray', alpha=.3, label=r'GP $\pm 2\sigma$')
+plt.fill_between(w_sample, mean_new - var_new, mean_new + var_new,
+                 color='b', alpha=.3, label=r'GP $\pm 1\sigma$')
+plt.fill_between(w_sample, mean_new - 2 * var_new, mean_new + 2 * var_new,
+                 color='gray', alpha=.3, label=r'GP $\pm 2\sigma$')
 plt.show()
 
 emul_d = {}
-
 for obs_name, info_d in obs_d.items():
     emul_d[obs_name] = {
-        'mean': predictM(np.transpose(meshmesh), gp),
-        'uncert': predictC(np.transpose(meshmesh), gp)
+        'mean': predictM(np.transpose(x_mesh), gp),
+        'uncert': predictC(np.transpose(x_mesh), gp)
     }
 
 
@@ -299,8 +300,8 @@ def likelihood(params, data):
         else:
             nn = int((x_value - xmin) * nlenp * nlenx / 2)
 
-        tmp_model_mean = np.array(tmp_model_mean).reshape((nlenp, nlenx))[nn]
-        tmp_model_uncert = np.array(tmp_model_uncert).reshape((nlenp, nlenx))[nn]
+        tmp_model_mean = np.array(tmp_model_mean)[0:nlenx]  # .reshape((nlenp, nlenx))[nn]
+        tmp_model_uncert = np.array(tmp_model_uncert)[0:nlenx]  # .reshape((nlenp, nlenx))[nn]
         cov = (np.multiply(tmp_model_uncert, tmp_model_uncert) + np.multiply(tmp_data_uncert, tmp_data_uncert))
         res += np.divide(np.power(tmp_model_mean - tmp_data_mean, 2), cov)
         norm *= 1 / np.sqrt(cov)
@@ -374,7 +375,7 @@ plt.ylabel(r'Posterior')
 x_range3 = np.arange(xmin, xmax, (xmax - xmin) / nlenp)
 
 posterior_list = [scipy.integrate.quad(lambda y_val: posterior({x_param_name: x_val, y_param_name: y_val},
-                                                               data_d)[int((y_val-ymin) * nlenx * nlenp / 12)],
+                                                               data_d)[int((y_val - ymin) * nlenx * nlenp / 12)],
                                        ymin, ymax)[0] for x_val in x_range3]
 
 plt.plot(x_range3, posterior_list, "-", color='black', lw=4)
@@ -397,7 +398,7 @@ y_range3 = np.arange(ymin, ymax, (ymax - ymin) / nlenx)
 
 posterior_list = [
     scipy.integrate.quad(lambda x_val: posterior({x_param_name: x_val, y_param_name: y_val},
-                                                 data_d)[int((y_val-ymin) * nlenx * nlenp / 12)], xmin, xmax,
+                                                 data_d)[int((y_val - ymin) * nlenx * nlenp / 12)], xmin, xmax,
                          limit=100, epsrel=1e-4)[0] for y_val in y_range3]
 
 plt.plot(y_range3, posterior_list, "-", color='black', lw=4)
