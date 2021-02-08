@@ -27,7 +27,7 @@ warnings.filterwarnings('ignore')
 savedValues = np.load("paramsSmall.npy", allow_pickle=True)
 param1_size = int(savedValues[2][0])
 param2_size = int(savedValues[2][1])
-datum = np.load(savedValues[0] + ".npy").reshape((param1_size, param2_size, 4))
+datum = np.load(str(savedValues[0]) + ".npy").reshape((param1_size, param2_size, 4))
 # datum = np.load("datPW.txt.npy").reshape((param1_size, param2_size, 4))
 
 
@@ -35,7 +35,10 @@ datum = np.load(savedValues[0] + ".npy").reshape((param1_size, param2_size, 4))
 def e2(params):
     thicc = params['parameter_1']
     div = (xmax - xmin) * param2_size
-    nn = int(param1_size * (thicc[0] - xmin) * param2_size / div) - 1
+    nn = int(param1_size * (thicc[0] - xmin) * param2_size / div)
+    if nn == len(datum):
+        nn -= 1
+    print(nn)
     return datum[nn, :, 2]
 
 
@@ -47,7 +50,9 @@ def true2(params):
 def e3(params):
     thicc = params['parameter_1']
     div = (xmax - xmin) * param2_size
-    nn = int(param1_size * (thicc[0] - xmin) * param2_size / div) - 1
+    nn = int(param1_size * (thicc[0] - xmin) * param2_size / div)
+    if nn == len(datum):
+        nn -= 1
     return datum[nn, :, 3]
 
 
@@ -208,7 +213,7 @@ for obs_name, info_d in obs_d.items():
 
     relative_uncertainty = info_d['theoretical_relative_uncertainty']
 
-    calculation_uncert_list = calculation_mean_list * relative_uncertainty
+    calculation_uncert_list = np.multiply(calculation_mean_list, relative_uncertainty)
     # np.multiply(np.full_like(calculation_mean_list,np.mean(calculation_mean_list)),relative_uncertainty)
 
     calculation_mean_plus_noise = calculation_mean_list + [np.random.normal(0, uncert) for uncert in
