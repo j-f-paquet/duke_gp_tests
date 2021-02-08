@@ -22,9 +22,9 @@ warnings.filterwarnings('ignore')
 #################################
 
 # Replace these two functions with trento calls ################ <=============================
-nlenp = 100
-nlenx = 100
-datum = np.load("dat.txt.npy").reshape((nlenp, nlenx, 4))
+nlenp = 50
+nlenx = 70
+datum = np.load("datPW.txt.npy").reshape((nlenp, nlenx, 4))
 
 
 # Return observable given parameter
@@ -38,7 +38,7 @@ def e2(params):
 def true2(params):
     thicc = params['reduced_thickness']
     xsec = params['cross_section']
-    string = '../build/src/trento Pb Pb 4000 -p ' + str(thicc) + ' -x ' + str(xsec)
+    string = '../build/src/trento Pb Pb 4000 -p ' + str(thicc) + ' -w ' + str(xsec)
     with subprocess.Popen(string.split(), stdout=subprocess.PIPE) as proc:
         data = np.array([l.split() for l in proc.stdout], dtype=float)[:, 4]
     ave = np.mean(data)
@@ -57,7 +57,7 @@ def e3(params):
 def true3(params):
     thicc = params['reduced_thickness']
     xsec = params['cross_section']
-    string = '../build/src/trento Pb Pb 4000 -x ' + str(xsec) + ' -p ' + str(thicc)
+    string = '../build/src/trento Pb Pb 4000 -w ' + str(xsec) + ' -p ' + str(thicc)
     with subprocess.Popen(string.split(), stdout=subprocess.PIPE) as proc:
         data = np.array([l.split() for l in proc.stdout], dtype=float)[:, 5]
     ave = np.mean(data)
@@ -72,13 +72,13 @@ def true3(params):
 parameter_d = {
     'reduced_thickness': {
         "label": "Reduced thickness",
-        "range": [0, 2],  # <====================================================
+        "range": [0, 0.5],  # <====================================================
         "truth": 0.314  # <====================================================
     },
     'cross_section': {
-        "label": r"Cross-section $\sigma_{NN}$",
-        "range": [4., 8.],  # <====================================================
-        "truth": 5.28  # <====================================================
+        "label": "Nucleon-width",
+        "range": [0.5, 1.2],  # <====================================================
+        "truth": 0.618  # <====================================================
     }
 }
 

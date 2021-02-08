@@ -2,7 +2,7 @@ import numpy as np
 import subprocess
 
 n_samples = 100  # Discretization of a Trento parameter
-n_trento = 4000  # Number of times to run Trento
+n_trento = 100  # Number of times to run Trento
 wmin = 0.5
 wmax = 1.2
 xrange = np.arange(wmin, wmax, (wmax - wmin) / n_samples)
@@ -19,4 +19,4 @@ for i in xrange:
     store[counti][1] = ave
     counti += 1
 
-np.save("datW", store)
+np.save("datW2", store)
