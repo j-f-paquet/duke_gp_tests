@@ -24,7 +24,7 @@ warnings.filterwarnings('ignore')
 #          [parameter min values], [parameter max values], [parameter truths],
 #          number of observables, [observable names], [observable truths]
 
-savedValues = np.load("paramsSmall.npy", allow_pickle=True)
+savedValues = np.load("paramsBig.npy", allow_pickle=True)
 param1_size = int(savedValues[2][0])
 param2_size = int(savedValues[2][1])
 datum = np.load(str(savedValues[0]) + ".npy").reshape((param1_size, param2_size, 4))
@@ -38,7 +38,6 @@ def e2(params):
     nn = int(param1_size * (thicc[0] - xmin) * param2_size / div)
     if nn == len(datum):
         nn -= 1
-    print(nn)
     return datum[nn, :, 2]
 
 
