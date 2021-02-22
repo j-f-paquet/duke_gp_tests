@@ -24,11 +24,10 @@ warnings.filterwarnings('ignore')
 #          [parameter min values], [parameter max values], [parameter truths],
 #          number of observables, [observable names], [observable truths]
 
-savedValues = np.load("paramsBig.npy", allow_pickle=True)
+savedValues = np.load("paramsSmallTest.npy", allow_pickle=True)
 param1_size = int(savedValues[2][0])
 param2_size = int(savedValues[2][1])
 datum = np.load(str(savedValues[0]) + ".npy").reshape((param1_size, param2_size, 4))
-# datum = np.load("datPW.txt.npy").reshape((param1_size, param2_size, 4))
 
 
 # Return observable given parameter
@@ -38,7 +37,8 @@ def e2(params):
     nn = int(param1_size * (thicc[0] - xmin) * param2_size / div)
     if nn == len(datum):
         nn -= 1
-    return datum[nn, :, 2]
+    ret = datum[nn, :, 2]
+    return ret
 
 
 def true2(params):
@@ -52,7 +52,8 @@ def e3(params):
     nn = int(param1_size * (thicc[0] - xmin) * param2_size / div)
     if nn == len(datum):
         nn -= 1
-    return datum[nn, :, 3]
+    ret = datum[nn, :, 3]
+    return ret
 
 
 def true3(params):
@@ -188,6 +189,7 @@ calc_d = {}
 for obs_name, info_d in obs_d.items():
     # Function that returns the value of an observable
     obs_fct = info_d['fct']
+    truth_fct = info_d['tfct']
 
     # Info about parameters
     param_name_list = list(parameter_d.keys())
@@ -235,7 +237,6 @@ for obs_name, info_d in obs_d.items():
 
     # Function that returns the value of an observable (just to get the truth)
     obs_fct = info_d['fct']
-    truth_fct = info_d['tfct']
 
     param1_name = param_name_list[0]
     param1_min, param1_max = parameter_d[param1_name]['range']
@@ -276,7 +277,8 @@ for obs_name, info_d in obs_d.items():
         [np.ravel(calc_d[obs_name]['param1_mesh']), np.ravel(calc_d[obs_name]['param2_mesh'])])
     # emulator_obs_mean_value=np.ravel(calc_d[obs_name]['mean'])
     emulator_obs_mean_value = np.ravel(calc_d[obs_name]['mean_plus_noise'])
-
+    print(emulator_design_pts_value, np.shape(emulator_design_pts_value))
+    print(emulator_obs_mean_value, np.shape(emulator_obs_mean_value))
     # emulator_y_input_transform=emulator_y_input
 
     # print(emulator_design_pts_value)
@@ -292,16 +294,16 @@ for obs_name, info_d in obs_d.items():
 
     # https://github.com/keweiyao/JETSCAPE2020-TRENTO-BAYES/blob/master/trento-bayes.ipynb
     print('Information on emulator for observable ' + obs_label)
-    print('RBF: ', gaussian_process.kernel.get_params()['k1'])
-    print('White: ', gaussian_process.kernel.get_params()['k2'])
+    print('RBF: ', gaussian_process.kernel_.get_params()['k1'])
+    print('White: ', gaussian_process.kernel_.get_params()['k2'])
 
     print(calc_d[obs_name]['param1_list'])
     emul_d[obs_name] = {
         'gpr': gaussian_process
-        # 'mean':scipy.interpolate.interp2d(calc_d[obs_name]['x_list'], calc_d[obs_name]['y_list'],
-        # np.transpose(calc_d[obs_name]['mean']), kind='linear', copy=True, bounds_error=False, fill_value=None),
-        # 'uncert':scipy.interpolate.interp2d(calc_d[obs_name]['x_list'], calc_d[obs_name]['y_list'],
-        # np.transpose(calc_d[obs_name]['uncert']), kind='linear', copy=True, bounds_error=False, fill_value=None)
+        # 'mean':scipy.interpolate.interp2d(calc_d[obs_name]['x_list'], calc_d[obs_name]['y_list'], np.transpose(
+        # calc_d[obs_name]['mean']), kind='linear', copy=True, bounds_error=False, fill_value=None),
+        # 'uncert':scipy.interpolate.interp2d(calc_d[obs_name]['x_list'], calc_d[obs_name]['y_list'], np.transpose(
+        # calc_d[obs_name]['uncert']), kind='linear', copy=True, bounds_error=False, fill_value=None)
     }
 
     #####################
