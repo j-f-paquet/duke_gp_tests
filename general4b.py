@@ -4,7 +4,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.interpolate
 import scipy.integrate
-import subprocess
 
 # Use Gaussian process from scikit-learn
 from sklearn.gaussian_process import GaussianProcessRegressor as GPR
@@ -22,12 +21,16 @@ warnings.filterwarnings('ignore')
 
 # Storage: data file name, number of parameters, [parameter sizes], [parameter names],
 #          [parameter min values], [parameter max values], [parameter truths],
-#          number of observables, [observable names], [observable truths]
+#          number of observables, [observable names], [observable truths],
+#          design points file name, [number of design points]
 
-savedValues = np.load("paramsSmallTest.npy", allow_pickle=True)
+savedValues = np.load("paramsBig.npy", allow_pickle=True)
 param1_size = int(savedValues[2][0])
 param2_size = int(savedValues[2][1])
 datum = np.load(str(savedValues[0]) + ".npy").reshape((param1_size, param2_size, 4))
+param1_ndp = int(savedValues[11][0])
+param2_ndp = int(savedValues[11][1])
+desPoints = np.load(str(savedValues[10]) + ".npy").reshape((param1_ndp, param2_ndp, 4))
 
 
 # Return observable given parameter
@@ -45,6 +48,16 @@ def true2(params):
     return savedValues[9][0]
 
 
+def dpe2(params):
+    thicc = params['parameter_1']
+    div = (xmax - xmin) * param2_ndp
+    nn = int(param1_ndp * (thicc[0] - xmin) * param2_ndp / div)
+    if nn == len(desPoints):
+        nn -= 1
+    ret = desPoints[nn, :, 2]
+    return ret
+
+
 # Return observable given parameter
 def e3(params):
     thicc = params['parameter_1']
@@ -60,6 +73,16 @@ def true3(params):
     return savedValues[9][1]
 
 
+def dpe3(params):
+    thicc = params['parameter_1']
+    div = (xmax - xmin) * param2_ndp
+    nn = int(param1_ndp * (thicc[0] - xmin) * param2_ndp / div)
+    if nn == len(desPoints):
+        nn -= 1
+    ret = desPoints[nn, :, 3]
+    return ret
+
+
 # Dictionary of parameters
 # "label" is used for plotting purposes
 # "range" is the allowed range of the parameter (a simple uniform "prior")
@@ -69,13 +92,13 @@ parameter_d = {
         "label": savedValues[3][0],
         "range": [savedValues[4][0], savedValues[5][0]],  # <====================================================
         "truth": savedValues[6][0],  # <====================================================
-        "nb_design_pts": 4
+        "nb_design_pts": param1_ndp
     },
     'parameter_2': {
         "label": savedValues[3][1],
         "range": [savedValues[4][1], savedValues[5][1]],  # <====================================================
         "truth": savedValues[6][1],  # <====================================================
-        "nb_design_pts": 6
+        "nb_design_pts": param2_ndp
     }
 }
 
@@ -84,13 +107,15 @@ obs_d = {
     "observable_1": {
         'fct': e2,
         'tfct': true2,
+        'dpfct': dpe2,
         'label': savedValues[8][0],
         'fake_exp_rel_uncert': 0.05,  # <====================================================
         'theoretical_relative_uncertainty': 0.05  # <====================================================
     },
-    "obsevable_1": {
+    "observable_2": {
         'fct': e3,
         'tfct': true3,
+        'dpfct': dpe3,
         'label': savedValues[8][1],
         'fake_exp_rel_uncert': 0.05,  # <====================================================
         'theoretical_relative_uncertainty': 0.05  # <====================================================
@@ -188,7 +213,7 @@ calc_d = {}
 
 for obs_name, info_d in obs_d.items():
     # Function that returns the value of an observable
-    obs_fct = info_d['fct']
+    obs_fct = info_d['dpfct']
     truth_fct = info_d['tfct']
 
     # Info about parameters
@@ -236,15 +261,17 @@ for obs_name, info_d in obs_d.items():
     obs_label = info_d['label']
 
     # Function that returns the value of an observable (just to get the truth)
-    obs_fct = info_d['fct']
+    obs_fct = info_d['dpfct']
+    truth_fct = info_d['tfct']
+    param_name_list2 = list(parameter_d.keys())
 
-    param1_name = param_name_list[0]
+    param1_name = param_name_list2[0]
     param1_min, param1_max = parameter_d[param1_name]['range']
     param1_label = parameter_d[param1_name]['label']
     param1_nb_design_pts = parameter_d[param1_name]["nb_design_pts"]
     param1_truth = parameter_d[param1_name]['truth']
 
-    param2_name = param_name_list[1]
+    param2_name = param_name_list2[1]
     param2_min, param2_max = parameter_d[param2_name]['range']
     param2_label = parameter_d[param2_name]['label']
     param2_nb_design_pts = parameter_d[param2_name]["nb_design_pts"]
@@ -277,8 +304,8 @@ for obs_name, info_d in obs_d.items():
         [np.ravel(calc_d[obs_name]['param1_mesh']), np.ravel(calc_d[obs_name]['param2_mesh'])])
     # emulator_obs_mean_value=np.ravel(calc_d[obs_name]['mean'])
     emulator_obs_mean_value = np.ravel(calc_d[obs_name]['mean_plus_noise'])
-    print(emulator_design_pts_value, np.shape(emulator_design_pts_value))
-    print(emulator_obs_mean_value, np.shape(emulator_obs_mean_value))
+    # print(emulator_design_pts_value, np.shape(emulator_design_pts_value))
+    # print(emulator_obs_mean_value, np.shape(emulator_obs_mean_value))
     # emulator_y_input_transform=emulator_y_input
 
     # print(emulator_design_pts_value)
@@ -341,7 +368,7 @@ for obs_name, info_d in obs_d.items():
         # Plot design points
         plt.errorbar(calc_d[obs_name]['param1_list'], np.array(calc_d[obs_name]['mean'])[:, iy],
                      yerr=np.array(calc_d[obs_name]['uncert'])[:, iy], fmt='D', color='orange', capsize=4,
-                     label=y_label + "=" + str(y))
+                     label="" + y_label + "=" + str(y))
 
         # print(calc_d[obs_name]['x_list'],calc_d[obs_name]['mean'][iy],calc_d[obs_name]['uncert'][iy])
 
