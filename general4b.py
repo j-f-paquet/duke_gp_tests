@@ -25,6 +25,8 @@ warnings.filterwarnings('ignore')
 #          design points file name, [number of design points]
 
 savedValues = np.load("paramsBig.npy", allow_pickle=True)
+numParams = int(savedValues[1])
+numObs = int(savedValues[7])
 param1_size = int(savedValues[2][0])
 param2_size = int(savedValues[2][1])
 datum = np.load(str(savedValues[0]) + ".npy").reshape((param1_size, param2_size, 4))
@@ -34,14 +36,14 @@ desPoints = np.load(str(savedValues[10]) + ".npy").reshape((param1_ndp, param2_n
 
 
 # Return observable given parameter
-def e2(params):
+"""def e2(params):
     thicc = params['parameter_1']
     div = (xmax - xmin) * param2_size
     nn = int(param1_size * (thicc[0] - xmin) * param2_size / div)
     if nn == len(datum):
         nn -= 1
     ret = datum[nn, :, 2]
-    return ret
+    return ret"""
 
 
 def true2(params):
@@ -55,18 +57,19 @@ def dpe2(params):
     if nn == len(desPoints):
         nn -= 1
     ret = desPoints[nn, :, 2]
+    print(ret)
     return ret
 
 
 # Return observable given parameter
-def e3(params):
+"""def e3(params):
     thicc = params['parameter_1']
     div = (xmax - xmin) * param2_size
     nn = int(param1_size * (thicc[0] - xmin) * param2_size / div)
     if nn == len(datum):
         nn -= 1
     ret = datum[nn, :, 3]
-    return ret
+    return ret"""
 
 
 def true3(params):
@@ -80,6 +83,7 @@ def dpe3(params):
     if nn == len(desPoints):
         nn -= 1
     ret = desPoints[nn, :, 3]
+    print(ret)
     return ret
 
 
@@ -105,7 +109,6 @@ parameter_d = {
 # Observable dictionary
 obs_d = {
     "observable_1": {
-        'fct': e2,
         'tfct': true2,
         'dpfct': dpe2,
         'label': savedValues[8][0],
@@ -113,7 +116,6 @@ obs_d = {
         'theoretical_relative_uncertainty': 0.05  # <====================================================
     },
     "observable_2": {
-        'fct': e3,
         'tfct': true3,
         'dpfct': dpe3,
         'label': savedValues[8][1],
@@ -121,6 +123,8 @@ obs_d = {
         'theoretical_relative_uncertainty': 0.05  # <====================================================
     }
 }
+
+xmin, xmax = parameter_d['parameter_1']['range']
 
 #########################
 #### Get the "data" #####
@@ -132,10 +136,8 @@ data_d = {}
 # This will be a "closure test": we use the model to generate "data"
 # The Bayesian parameter estimation should be peaked around the true value of the parameters
 for obs_name, info_d in obs_d.items():
-    #
     obs_fct = info_d['tfct']
 
-    #
     data_d[obs_name] = {}
 
     # Parameters
@@ -155,7 +157,7 @@ print(data_d)
 #### Plot the "data" #####
 #########################
 
-for obs_name, info_d in obs_d.items():
+"""for obs_name, info_d in obs_d.items():
     # Function that returns the value of an observable
     obs_fct = info_d['fct']
 
@@ -203,7 +205,7 @@ for obs_name, info_d in obs_d.items():
     # plt.contourf(x_mesh, y_mesh, z_list, levels=[data_mean-data_uncert,data_mean+data_uncert],colors='r',alpha=.4)
 
     plt.tight_layout()
-plt.show()
+plt.show()"""
 
 ########################
 # Get the calculations #
@@ -214,7 +216,6 @@ calc_d = {}
 for obs_name, info_d in obs_d.items():
     # Function that returns the value of an observable
     obs_fct = info_d['dpfct']
-    truth_fct = info_d['tfct']
 
     # Info about parameters
     param_name_list = list(parameter_d.keys())
@@ -302,14 +303,10 @@ for obs_name, info_d in obs_d.items():
 
     emulator_design_pts_value = np.transpose(
         [np.ravel(calc_d[obs_name]['param1_mesh']), np.ravel(calc_d[obs_name]['param2_mesh'])])
-    # emulator_obs_mean_value=np.ravel(calc_d[obs_name]['mean'])
-    emulator_obs_mean_value = np.ravel(calc_d[obs_name]['mean_plus_noise'])
-    # print(emulator_design_pts_value, np.shape(emulator_design_pts_value))
-    # print(emulator_obs_mean_value, np.shape(emulator_obs_mean_value))
-    # emulator_y_input_transform=emulator_y_input
+    # Should have format [[param1, param2],[],[],...]
 
-    # print(emulator_design_pts_value)
-    # print(emulator_obs_mean_value)
+    emulator_obs_mean_value = np.ravel(calc_d[obs_name]['mean_plus_noise'])
+    # Should have format [ob1, obs1, ...]
 
     # Fit a GP (optimize the kernel hyperparameters) to each PC.
     gaussian_process = GPR(
@@ -420,8 +417,10 @@ def likelihood(params, data):
         # emulator_uncert_vec = np.vectorize(emulator_uncert)
 
         # Info about parameters
+        x_param_name = param_name_list[0]
         param1_val = params[x_param_name]
 
+        y_param_name = param_name_list[1]
         param2_val = params[y_param_name]
 
         tmp_data_mean, tmp_data_uncert = data_mean2, data_uncert2
