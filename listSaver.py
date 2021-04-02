@@ -57,14 +57,17 @@ paramMins = np.array([0, 0.5])
 paramMaxs = np.array([0.5, 1.2])
 paramTruths = np.array([0.314, 0.618])
 obsLabels = np.array([r"$\epsilon$2", r"$\epsilon$3"])
+expRelUncert = np.array([0.05, 0.05])
+theoRelUncert = np.array([0.05, 0.05])
 
 obsTruths = chm(paramTruths)
 print(paramTruths[0], paramTruths[1], obsTruths[0], obsTruths[1])
 
 # Storage: data file name, [parameter sizes], [parameter names], [parameter min values],
-#          [parameter max values], [parameter truths], [observable names], [observable truths]
-store1 = np.array([dataFileName, nSamplesList, paramLabels, paramMins,
-                   paramMaxs, paramTruths, obsLabels, obsTruths], dtype=object)
+#          [parameter max values], [parameter truths], [observable names], [observable truths],
+#          [experimental relative uncertainty], [theoretical relative uncertainty]
+store1 = np.array([dataFileName, nSamplesList, paramLabels, paramMins, paramMaxs, paramTruths,
+                   obsLabels, obsTruths, expRelUncert, theoRelUncert], dtype=object)
 
 np.save(accessFileName, store1)
 print("Saved parameters file")
