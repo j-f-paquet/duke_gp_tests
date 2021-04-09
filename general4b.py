@@ -399,7 +399,6 @@ def prior(params):
 # Here 'x' is the only model parameter
 def likelihood(params, data):
     res = 0.0
-
     norm = 1.
 
     # Sum over observables

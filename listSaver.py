@@ -23,12 +23,12 @@ def chm(params):
 def get_quasirandom_sequence(dim, num_samples):
     def phi(dd):
         x = 2.0000
-        for ii in range(10):
+        for iii in range(10):
             x = pow(1 + x, 1 / (dd + 1))
             return x
 
     d = dim  # Number of dimensions
-    n = np.prod(num_samples)  # Array of number of design points for each parameter
+    n = num_samples  # Array of number of design points for each parameter
 
     g = phi(d)
     alpha = np.zeros(d)
@@ -48,10 +48,10 @@ def get_quasirandom_sequence(dim, num_samples):
 
 
 getData = True
-accessFileName = "listedSmall"
-dataFileName = "listDataSmall"
+accessFileName = "listedVerySmall"
+dataFileName = "listDataVerySmall"
 paramLabels = np.array(["Reduced thickness", "Nucleon-Width"])
-nSamplesList = np.array([10, 14])
+totDesPts = 12
 nTrentoRuns = 4000  # Number of times to run Trento
 paramMins = np.array([0, 0.5])
 paramMaxs = np.array([0.5, 1.2])
@@ -63,25 +63,25 @@ theoRelUncert = np.array([0.05, 0.05])
 obsTruths = chm(paramTruths)
 print(paramTruths[0], paramTruths[1], obsTruths[0], obsTruths[1])
 
-# Storage: data file name, [parameter sizes], [parameter names], [parameter min values],
+# Storage: data file name, amount of Design Points, [parameter names], [parameter min values],
 #          [parameter max values], [parameter truths], [observable names], [observable truths],
 #          [experimental relative uncertainty], [theoretical relative uncertainty]
-store1 = np.array([dataFileName, nSamplesList, paramLabels, paramMins, paramMaxs, paramTruths,
+store1 = np.array([dataFileName, totDesPts, paramLabels, paramMins, paramMaxs, paramTruths,
                    obsLabels, obsTruths, expRelUncert, theoRelUncert], dtype=object)
 
 np.save(accessFileName, store1)
 print("Saved parameters file")
 
 if getData:
-    unit_random_sequence = get_quasirandom_sequence(len(nSamplesList), nSamplesList)
+    unit_random_sequence = get_quasirandom_sequence(len(paramLabels), totDesPts)
     design_points = np.zeros(np.shape(unit_random_sequence))
     observables = np.zeros((len(design_points), len(obsTruths)))
     for ii in range(len(design_points)):
-        for jj in range(len(nSamplesList)):
+        for jj in range(len(paramLabels)):
             design_points[ii][jj] = paramMins[jj] + unit_random_sequence[ii][jj] * (paramMaxs[jj] - paramMins[jj])
         observables[ii] = chm(design_points[ii])
     store2 = np.array([design_points, observables], dtype=object)
     np.save(dataFileName, store2)
     print("Saved design points and observables")
-#    plt.plot(design_points[:, 0], design_points[:, 1], 'b.')
-#    plt.show()
+    plt.plot(design_points[:, 0], design_points[:, 1], 'b.')
+    plt.show()

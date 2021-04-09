@@ -12,11 +12,11 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-# Storage: data file name, [parameter sizes], [parameter names], [parameter min values],
+# Storage: data file name, Total amount of Design Points, [parameter names], [parameter min values],
 #          [parameter max values], [parameter truths], [observable names], [observable truths],
 #          [experimental relative uncertainty], [theoretical relative uncertainty]
-savedValues = np.load("listedSmall.npy", allow_pickle=True)
-paramSizes = savedValues[1]
+savedValues = np.load("listedVerySmall.npy", allow_pickle=True)
+totDesPoints = savedValues[1]
 paramNames = savedValues[2]
 paramMins = savedValues[3]
 paramMaxs = savedValues[4]
@@ -47,24 +47,14 @@ for nn in range(len(obsTruths)):
     obs_label = obsNames[nn]
 
     # Function that returns the value of an observable (just to get the truth)
-    param1_label = paramNames[0]
-    param1_nb_design_pts = desPts[:, 0]
-    param1_truth = paramTruths[0]
-
-    param2_label = paramNames[0]
-    param2_nb_design_pts = desPts[:, 1]
-    param2_truth = paramTruths[0]
-
-    param1_paramspace_length = paramMaxs[0] - paramMins[0]
-    param2_paramspace_length = paramMaxs[1] - paramMins[1]
 
     # Kernels
     k0 = 1. * kernels.RBF(
-        length_scale=(param1_paramspace_length / 2., param2_paramspace_length / 2.),
-        length_scale_bounds=(
-            (param1_paramspace_length / param1_nb_design_pts, 3. * param1_paramspace_length),
-            (param2_paramspace_length / param2_nb_design_pts, 3. * param2_paramspace_length)
-        )
+        # length_scale=(param1_paramspace_length / 2., param2_paramspace_length / 2.)
+        #    length_scale_bounds=(
+        #        (param1_paramspace_length / param1_nb_design_pts, 3. * param1_paramspace_length),
+        #        (param2_paramspace_length / param2_nb_design_pts, 3. * param2_paramspace_length)
+        #    )
     )
 
     k2 = 1. * kernels.WhiteKernel(
@@ -77,9 +67,9 @@ for nn in range(len(obsTruths)):
 
     nrestarts = 10
 
-    emulator_design_pts_value = desPts.tolist()
+    emulator_design_pts_value = np.array(desPts)  # .tolist()
 
-    emulator_obs_mean_value = observables[:, nn].tolist()
+    emulator_obs_mean_value = np.array(observables[:, nn])  # .tolist()
 
     # Fit a GP (optimize the kernel hyperparameters) to each PC.
     gaussian_process = GPR(
@@ -107,51 +97,38 @@ for nn in range(len(obsTruths)):
     #####################
 
     # observable vs value of one parameter (with the other parameter fixed)
-    plt.figure()
-    plt.xscale('linear')
-    plt.yscale('linear')
-    plt.xlabel(param1_label)
-    plt.ylabel(obs_label)
-
-    len_y = paramSizes[1]
-    step_y = np.max([int(len_y / 2), 1])
-
-    for iy in np.arange(0, len_y, step_y):
-        y = desPts[iy][1]
-        y_label = param2_label
+    for pl in range(len(paramTruths)):
+        plt.figure()
+        plt.xscale('linear')
+        plt.yscale('linear')
+        plt.xlabel(paramNames[pl])
+        plt.ylabel(obs_label)
 
         # Compute the posterior for a range of values of the parameter "x"
-        x_range = np.linspace(paramMins[0], paramMins[1], 50)
-        y_range = np.full_like(x_range, y)
+        x_range = np.linspace(paramMins[0], paramMaxs[0], 50)
+        y_range = np.linspace(paramMins[1], paramMaxs[1], 50)
+        ranges = np.array([x_range, y_range])
 
-        param_value_array = np.transpose([x_range, y_range])
+        param_value_array = np.transpose(ranges)
 
         z_list, z_list_uncert = gaussian_process.predict(param_value_array, return_std=True)
-        # print('param_value_array',param_value_array)
-        # print('z_list',z_list)
-
-        # print('all=',calc_d[obs_name]['mean'])
-        # print('shape=',np.array(calc_d[obs_name]['mean']).shape)
-        # print('w iy',np.array(calc_d[obs_name]['mean'])[:,iy])
 
         # Plot design points
-        plt.errorbar(desPts[:, 0], np.array(observables[nn])[:, iy],
-                     yerr=np.array(calcUncertList)[:, iy], fmt='D', color='orange', capsize=4,
-                     label="" + y_label + "=" + str(y))
-
-        # print(calc_d[obs_name]['x_list'],calc_d[obs_name]['mean'][iy],calc_d[obs_name]['uncert'][iy])
+        plt.errorbar(desPts[:, pl], np.array(observables[:, nn]),
+                     yerr=np.array(calcUncertList)[:, nn], fmt='D', color='orange', capsize=4)
 
         # Plot interpolator
-        plt.plot(x_range, z_list, color='blue')
-        plt.fill_between(x_range, z_list - z_list_uncert, z_list + z_list_uncert, color='blue', alpha=.4)
+        plt.plot(ranges[pl], z_list, color='blue')
+        plt.fill_between(ranges[pl], z_list - z_list_uncert, z_list + z_list_uncert, color='blue', alpha=.4)
 
-    # Plot the truth
-    plt.plot(param1_truth, obsTruths[nn], "D", color='black')
+        # Plot the truth
+        plt.plot(paramTruths[pl], obsTruths[nn], "D", color='black')
 
-    plt.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
+        plt.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
 
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+
+plt.show()
 
 
 ### Compute the Posterior ###
@@ -168,15 +145,11 @@ def prior():
 # Here 'x' is the only model parameter
 def likelihood():
     res = 0.0
-
     norm = 1.
 
     # Sum over observables
     for xx in range(len(obsTruths)):
         # Function that returns the value of an observable
-
-        # emulator_calc=emul_d[obs_name]['mean']
-        # emulator_uncert=emul_d[obs_name]['uncert']
 
         data_mean2 = observables[:, xx]
         data_uncert2 = np.multiply(data_mean2, expRelUncert[xx])
@@ -186,18 +159,17 @@ def likelihood():
         tmp_model_mean, tmp_model_uncert = gaussian_process.predict(
             np.atleast_2d(desPts), return_std=True)
 
-        cov = (tmp_model_uncert * tmp_model_uncert + tmp_data_uncert * tmp_data_uncert)
+        cov = np.multiply(tmp_model_uncert, tmp_model_uncert) + np.multiply(tmp_data_uncert, tmp_data_uncert)
 
-        res += np.power(tmp_model_mean - tmp_data_mean, 2) / cov
+        res += np.divide(np.power(tmp_model_mean - tmp_data_mean, 2), cov)
 
-        norm *= 1 / np.sqrt(cov)
+        norm = np.multiply(norm, np.divide(1, np.sqrt(cov.astype('float'))))
 
-    res *= -0.5
+    res = np.multiply(res, 0.5)
 
-    return norm * np.exp(res)
+    return np.multiply(norm, np.exp(res.astype('float')))
 
 
-#
 def posterior():
     return prior() * likelihood()
 
