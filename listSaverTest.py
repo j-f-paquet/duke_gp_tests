@@ -48,10 +48,10 @@ def get_quasirandom_sequence(dim, num_samples):
 
 
 getData = True
-accessFileName = "listedTrento"
-dataFileName = "listDataTrento"
+accessFileName = "listedVerySmall"
+dataFileName = "listDataVerySmall"
 paramLabels = np.array(["Reduced thickness", "Nucleon-Width"])
-totDesPts = 250
+totDesPts = 12
 nTrentoRuns = 4000  # Number of times to run Trento
 paramMins = np.array([0, 0.5])
 paramMaxs = np.array([0.5, 1.2])
@@ -60,7 +60,7 @@ obsLabels = np.array([r"$\epsilon$2", r"$\epsilon$3"])
 expRelUncert = np.array([0.05, 0.05])
 theoRelUncert = np.array([0.05, 0.05])
 
-obsTruths = trentoRun(paramTruths)
+obsTruths = chm(paramTruths)
 print(paramTruths[0], paramTruths[1], obsTruths[0], obsTruths[1])
 
 # Storage: data file name, amount of Design Points, [parameter names], [parameter min values],
@@ -79,7 +79,7 @@ if getData:
     for ii in range(len(design_points)):
         for jj in range(len(paramLabels)):
             design_points[ii][jj] = paramMins[jj] + unit_random_sequence[ii][jj] * (paramMaxs[jj] - paramMins[jj])
-        observables[ii] = trentoRun(design_points[ii])
+        observables[ii] = chm(design_points[ii])
     store2 = np.array([design_points, observables], dtype=object)
     np.save(dataFileName, store2)
     print("Saved design points and observables")
